@@ -1,0 +1,40 @@
+#version: "4.3"
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: employee_db
+    networks:
+      - my-network
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      #test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    ports:
+      - "8081:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - my-network
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    command: ["sh", "-c", "sleep 10 && java -jar /app/app.jar"]
+
+networks:
+  my-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
